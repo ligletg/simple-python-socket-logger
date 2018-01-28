@@ -3,8 +3,8 @@
 import socket, select
 from time import gmtime, strftime
 
-def create_file():
-    f = open("data/" + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + ".csv","w+")
+def create_file(timestamp, index):
+    f = open("data/" + timestamp + "-" + str(index) + ".csv","w+", 0)
     return f
 
 def write_to_file(data, FILE):
@@ -15,6 +15,11 @@ def main():
     RECV_BUFFER = 4096 # Advisable to keep it as an exponent of 2
     PORT = 5000
     FILE = None
+    FILE_COUNT = 1
+    MAX_FILE_SIZE = 200
+    CUR_FILE_SIZE = -1
+    TIMESTAMP = None
+
 
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # this has no effect, why ?
@@ -25,7 +30,7 @@ def main():
     # Add server socket to the list of readable connections
     CONNECTION_LIST.append(server_socket)
 
-    print "Chat server started on port " + str(PORT)
+    print "Server started on port " + str(PORT)
 
     while 1:
         # Get the list sockets which are ready to be read through select
@@ -40,8 +45,11 @@ def main():
                 CONNECTION_LIST.append(sockfd)
                 print "Client (%s, %s) connected" % addr
 
+                # saving timestamp of connection time
+                TIMESTAMP = strftime("%y-%m-%d-%H:%M:%S", gmtime())
+
                 # Create new CSV file with timestamp of the connection
-                FILE = create_file()
+                FILE = create_file(TIMESTAMP, FILE_COUNT)
 
             #Some incoming message from a client
             else:
@@ -50,10 +58,14 @@ def main():
                     #In Windows, sometimes when a TCP program closes abruptly,
                     # a "Connection reset by peer" exception will be thrown
                     data = sock.recv(RECV_BUFFER)
-                    # echo back the client message
                     if data and FILE:
-                            write_to_file(data, FILE)
-                        # sock.send('OK ... ' + data)
+                        CUR_FILE_SIZE += 1
+                        if CUR_FILE_SIZE >= MAX_FILE_SIZE :
+                            FILE_COUNT += 1
+                            CUR_FILE_SIZE = 0
+                            FILE.close()
+                            FILE = create_file(TIMESTAMP, FILE_COUNT)
+                        write_to_file(data, FILE)
 
                 # client disconnected, so remove from socket list
                 except:

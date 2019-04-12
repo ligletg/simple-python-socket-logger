@@ -4,7 +4,7 @@ import socket, select
 from time import gmtime, strftime
 
 def create_file(timestamp, index):
-    f = open("data/" + timestamp + "-" + str(index) + ".csv","w+", 0)
+    f = open("data/" + timestamp + "-" + str(index) + ".csv","w+")
     return f
 
 def write_to_file(data, FILE):
